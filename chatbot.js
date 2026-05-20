@@ -48,6 +48,28 @@ async function queryOllama(prompt) {
 async function main() {
     const zeroShotTemplate = fs.readFileSync(path.join(__dirname, 'prompts', 'zero_shot_template.txt'), 'utf8');
     const oneShotTemplate = fs.readFileSync(path.join(__dirname, 'prompts', 'one_shot_template.txt'), 'utf8');
+    const evaluationTemplate = fs.readFileSync(path.join(__dirname, 'prompts', 'evaluation_template.txt'), 'utf8');
+
+    async function evaluateResponse(query, response) {
+        const evalPrompt = evaluationTemplate
+            .replace("{query}", query)
+            .replace("{response}", response);
+
+        const evalPayload = {
+            model: MODEL_NAME,
+            prompt: evalPrompt,
+            stream: false,
+            format: "json"
+        };
+
+        try {
+            const evalRes = await axios.post(OLLAMA_ENDPOINT, evalPayload);
+            return JSON.parse(evalRes.data.response);
+        } catch (error) {
+            console.error(`Error evaluating response: ${error.message}`);
+            return { relevance: "N/A", coherence: "N/A", helpfulness: "N/A" };
+        }
+    }
 
     const resultsPath = path.join(__dirname, 'eval', 'results.md');
     
@@ -67,13 +89,15 @@ async function main() {
         // Zero-Shot
         const zeroShotPrompt = zeroShotTemplate.replace("{query}", query);
         const zeroShotResponse = await queryOllama(zeroShotPrompt);
-        const zeroShotRow = `| ${i + 1} | "${query}" | Zero-Shot | ${zeroShotResponse.replace(/\n/g, '<br>')} | | | |\n`;
+        const zeroShotEval = await evaluateResponse(query, zeroShotResponse);
+        const zeroShotRow = `| ${i + 1} | "${query}" | Zero-Shot | ${zeroShotResponse.replace(/\n/g, '<br>')} | ${zeroShotEval.relevance} | ${zeroShotEval.coherence} | ${zeroShotEval.helpfulness} |\n`;
         fs.appendFileSync(resultsPath, zeroShotRow);
 
         // One-Shot
         const oneShotPrompt = oneShotTemplate.replace("{query}", query);
         const oneShotResponse = await queryOllama(oneShotPrompt);
-        const oneShotRow = `| ${i + 1} | "${query}" | One-Shot | ${oneShotResponse.replace(/\n/g, '<br>')} | | | |\n`;
+        const oneShotEval = await evaluateResponse(query, oneShotResponse);
+        const oneShotRow = `| ${i + 1} | "${query}" | One-Shot | ${oneShotResponse.replace(/\n/g, '<br>')} | ${oneShotEval.relevance} | ${oneShotEval.coherence} | ${oneShotEval.helpfulness} |\n`;
         fs.appendFileSync(resultsPath, oneShotRow);
     }
 
