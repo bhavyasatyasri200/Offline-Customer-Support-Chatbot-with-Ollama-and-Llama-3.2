@@ -46,7 +46,7 @@ A fully automated, high-performance support system that can handle 20+ distinct 
 ## 4. Why Node.js & Axios? (The Bridge)
 *   **The Language**: Node.js is the most common language for building web backends.
 *   **Asynchronous Flow**: AI takes time to "think." Node.js uses an **Event Loop**, which means it can wait for the AI's response without freezing the rest of your computer.
-*   **Axios**: We used Axios because it handles HTTP requests more reliably than the built-in `fetch`. It also makes it easy to handle "Stream" responses (seeing the AI type word-by-word) which we used in our `pull_model.js` script.
+*   **Axios**: We used Axios because it handles HTTP requests more reliably than the built-in `fetch`. 
 
 ## 5. The Deep Dive into Prompting
 Why compare these two methods?
